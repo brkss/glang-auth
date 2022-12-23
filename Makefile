@@ -9,7 +9,7 @@ DB_HOST = localhost
 
 
 startdb:
-	docker run $(DB_CONTAINER)
+	docker start $(DB_CONTAINER)
 
 stopdb:
 	docker stop $(DB_CONTAINER)

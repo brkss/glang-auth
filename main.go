@@ -6,6 +6,8 @@ import (
 
 	"github.com/brkss/go-auth/api"
 	db "github.com/brkss/go-auth/db/sqlc"
+	"github.com/brkss/go-auth/token"
+	"github.com/brkss/go-auth/utils"
 	_ "github.com/lib/pq"
 )
 
@@ -22,8 +24,13 @@ func main(){
 		log.Fatal("cannot connect to database !")
 	}
 
+	maker, err := token.NewPasetoMaker(utils.RandomString(32))
+	if err != nil {
+		log.Fatal("cannot create token maker :", err)
+	}
+
 	store := db.NewStore(con)
-	server := api.NewServer(store)
+	server := api.NewServer(store, maker)
 	
 	server.Start("0.0.0.0:4000")
 }

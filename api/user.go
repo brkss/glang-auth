@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
@@ -38,6 +39,31 @@ func (server *Server)Login(ctx *gin.Context){
 		return
 	}
 	
+	user, err := server.store.GetUser(ctx, req.Username)
+	if err != nil {
+		if err.Error() == sql.ErrNoRows.Error() {
+			ctx.JSON(http.StatusNotFound, errResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errResponse(err))
+		return
+	}
+
+	err = utils.VerifyPassword(user.Password, req.Password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errResponse(err))
+		return;
+	}
+	
+	token, err := server.tokenMaker.CreateToken(user.ID, time.Hour)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errResponse(err))
+		return
+	}
+	response := AuthResponse{
+		AccessToken: token,
+	}
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (server *Server)Register(ctx *gin.Context){

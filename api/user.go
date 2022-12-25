@@ -117,3 +117,9 @@ func (server *Server)Register(ctx *gin.Context){
 	ctx.JSON(http.StatusOK, response)
 	return;
 }
+
+func (server *Server)Me(ctx gin.Context){
+	
+
+
+}

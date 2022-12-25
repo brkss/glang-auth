@@ -42,7 +42,7 @@ run:
 	CompileDaemon -command="make server"
 
 mock:
-	mockgen -package mockdb --destination=db/mock/store.go github.com/brkss/vanillefraise2/db/sqlc Store
+	mockgen -package mockdb --destination=db/mock/store.go github.com/brkss/go-auth/db/sqlc Store
 
 gen: sqlc mock
 

@@ -10,6 +10,7 @@ import (
 	"github.com/brkss/go-auth/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 
@@ -93,11 +94,22 @@ func (server *Server)Register(ctx *gin.Context){
 
 	user, err := server.store.CreateUser(ctx, arg) 
 	if err != nil {
+		pqError, ok := err.(*pq.Error)
+		if ok {
+			switch pqError.Code.Name(){
+				case "foreign_key_violation", "unique_violation":
+					ctx.JSON(http.StatusUnauthorized, errResponse(err))
+					return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return
 	}
 
 	token, err := server.tokenMaker.CreateToken(user.ID, time.Hour)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errResponse(err))
+	}
 
 	response := AuthResponse{
 		AccessToken: token,

@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -99,6 +100,41 @@ func TestRegisterUser(t *testing.T){
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder){
 				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "BadRequest",
+			body: gin.H{
+				"name": user.Name,
+				"email": user.Email,
+				"password": password,
+			},
+			buildStabs: func(store *mockdb.MockStore){
+				
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"name": user.Name,
+				"username": user.Username,
+				"email": user.Email,
+				"password": password,
+			},
+			buildStabs: func(store *mockdb.MockStore){
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusInternalServerError , recorder.Code)
 			},
 		},
 	}

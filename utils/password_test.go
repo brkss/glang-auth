@@ -7,9 +7,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func TestValidPassword(t *testing.T){
+func TestValidPassword(t *testing.T) {
 	password := RandomString(10)
-	
+
 	hash, err := HashPassword(password)
 	require.NoError(t, err)
 	require.NotEmpty(t, hash)
@@ -19,8 +19,8 @@ func TestValidPassword(t *testing.T){
 
 }
 
-func TestInvalidPassword(t *testing.T){
-	
+func TestInvalidPassword(t *testing.T) {
+
 	password1 := RandomString(10)
 	password2 := RandomString(10)
 

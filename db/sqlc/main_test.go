@@ -2,10 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"log"
 	"os"
 	"testing"
-	"log"
+
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -15,7 +17,12 @@ const (
 
 var testQueries *Queries
 
-func TestMain(m *testing.M){
+func TestNewStore(t *testing.T) {
+	store := NewStore(nil)
+	require.NotEmpty(t, store)
+}
+
+func TestMain(m *testing.M) {
 
 	con, err := sql.Open(dbDriver, dbSource)
 	if err != nil {
@@ -25,6 +32,5 @@ func TestMain(m *testing.M){
 	testQueries = New(con)
 
 	os.Exit(m.Run())
-
 
 }

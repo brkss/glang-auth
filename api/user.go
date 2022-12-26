@@ -14,30 +14,29 @@ import (
 	"github.com/lib/pq"
 )
 
-
-type LoginRequest 		struct {
-	Username	string `json:"username" binding:"required"`
-	Password	string `json:"password" binding:"required"`
+type LoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
-type RegisterRequest 	struct {
-	Name		string `json:"name" binding:"required"`
-	Username 	string `json:"username" binding:"required"`
-	Password	string `json:"password" binding:"required"`
-	Email		string `json:"email" binding:"required"`
-} 
+type RegisterRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+}
 
 type AuthResponse struct {
-	AccessToken	string `json:"access_token"`
+	AccessToken string `json:"access_token"`
 }
 
 type UserResponse struct {
-	Name 		string
-	Email 		string
-	Username 	string
+	Name     string
+	Email    string
+	Username string
 }
 
-func (server *Server)Login(ctx *gin.Context){
+func (server *Server) Login(ctx *gin.Context) {
 
 	var req LoginRequest
 
@@ -46,7 +45,7 @@ func (server *Server)Login(ctx *gin.Context){
 		ctx.JSON(http.StatusBadRequest, errResponse(err))
 		return
 	}
-	
+
 	user, err := server.store.GetUser(ctx, req.Username)
 	if err != nil {
 		if err.Error() == sql.ErrNoRows.Error() {
@@ -60,9 +59,9 @@ func (server *Server)Login(ctx *gin.Context){
 	err = utils.VerifyPassword(user.Password, req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errResponse(err))
-		return;
+		return
 	}
-	
+
 	token, err := server.tokenMaker.CreateToken(user.ID, time.Hour)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
@@ -74,7 +73,7 @@ func (server *Server)Login(ctx *gin.Context){
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (server *Server)Register(ctx *gin.Context){
+func (server *Server) Register(ctx *gin.Context) {
 
 	var req RegisterRequest
 
@@ -92,28 +91,28 @@ func (server *Server)Register(ctx *gin.Context){
 	}
 
 	arg := db.CreateUserParams{
-		ID: uuid.New().String(),
+		ID:       uuid.New().String(),
 		Username: req.Username,
-		Email: req.Email,
+		Email:    req.Email,
 		Password: hash,
-		Name: req.Name,
+		Name:     req.Name,
 	}
 
-	user, err := server.store.CreateUser(ctx, arg) 
+	user, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
 		pqError, ok := err.(*pq.Error)
 		if ok {
-			switch pqError.Code.Name(){
-				case "foreign_key_violation", "unique_violation":
-					ctx.JSON(http.StatusUnauthorized, errResponse(err))
-					return
+			switch pqError.Code.Name() {
+			case "foreign_key_violation", "unique_violation":
+				ctx.JSON(http.StatusUnauthorized, errResponse(err))
+				return
 			}
 		}
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return
 	}
 
-	token, err := server.tokenMaker.CreateToken(user.ID, time.Hour)
+	token, err := server.tokenMaker.CreateToken(user.ID, server.config.TokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 	}
@@ -122,36 +121,28 @@ func (server *Server)Register(ctx *gin.Context){
 		AccessToken: token,
 	}
 	ctx.JSON(http.StatusOK, response)
-	return;
+	return
 }
 
 func CreateUserResponse(user db.User) UserResponse {
 	return UserResponse{
-		Name: user.Name,
-		Email: user.Email,
+		Name:     user.Name,
+		Email:    user.Email,
 		Username: user.Username,
 	}
 }
 
-func (server *Server)Me(ctx *gin.Context){
-	
+func (server *Server) Me(ctx *gin.Context) {
+
 	payload, ok := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if !ok {
 		err := fmt.Errorf("something went wrong checking token payload !")
-		ctx.JSON(http.StatusInternalServerError, errResponse(err))
-		return;
+		ctx.JSON(http.StatusUnauthorized, errResponse(err))
+		return
 	}
 
 	user, err := server.store.Me(ctx, payload.UserId)
 	if err != nil {
-		pqErr, ok := err.(*pq.Error)
-		if ok {
-			switch pqErr.Code.Name() {
-				case "case_not_found":
-					ctx.JSON(http.StatusNotFound, errResponse(err))
-					return
-			}
-		}
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return
 	}

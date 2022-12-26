@@ -7,6 +7,7 @@ import (
 	"time"
 
 	db "github.com/brkss/go-auth/db/sqlc"
+	"github.com/brkss/go-auth/token"
 	"github.com/brkss/go-auth/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -118,8 +119,14 @@ func (server *Server)Register(ctx *gin.Context){
 	return;
 }
 
-func (server *Server)Me(ctx gin.Context){
+func (server *Server)Me(ctx *gin.Context){
 	
+	payload, ok := ctx.MustGet(authorizationHeaderKey).(token.Payload)
+	if !ok {
+		err := fmt.Errorf("something went wrong checking token payload !")
+		ctx.JSON(http.StatusInternalServerError, errResponse(err))
+		return;
+	}
 
-
+	//user, err := server.store.
 }

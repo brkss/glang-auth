@@ -64,3 +64,23 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 	)
 	return i, err
 }
+
+const me = `-- name: Me :one
+SELECT id, username, name, password, email, created_at FROM users
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) Me(ctx context.Context, id string) (User, error) {
+	row := q.db.QueryRowContext(ctx, me, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Name,
+		&i.Password,
+		&i.Email,
+		&i.CreatedAt,
+	)
+	return i, err
+}

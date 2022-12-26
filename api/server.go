@@ -20,6 +20,10 @@ func NewServer(store db.Store, tokenMaker token.Maker) *Server {
 	
 	router.POST("/login", server.Login)
 	router.POST("/register", server.Register)
+	
+	// -- Protected routes 
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	authRoutes.GET("/me", server.Me)
 
 	router.GET("/ping", func(ctx *gin.Context){
 		ctx.JSON(http.StatusOK, gin.H{"response": "pong"})

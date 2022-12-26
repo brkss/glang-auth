@@ -31,6 +31,12 @@ type AuthResponse struct {
 	AccessToken	string `json:"access_token"`
 }
 
+type UserResponse struct {
+	Name 		string
+	Email 		string
+	Username 	string
+}
+
 func (server *Server)Login(ctx *gin.Context){
 
 	var req LoginRequest
@@ -119,14 +125,36 @@ func (server *Server)Register(ctx *gin.Context){
 	return;
 }
 
+func CreateUserResponse(user db.User) UserResponse {
+	return UserResponse{
+		Name: user.Name,
+		Email: user.Email,
+		Username: user.Username,
+	}
+}
+
 func (server *Server)Me(ctx *gin.Context){
 	
-	payload, ok := ctx.MustGet(authorizationHeaderKey).(token.Payload)
+	payload, ok := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if !ok {
 		err := fmt.Errorf("something went wrong checking token payload !")
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return;
 	}
 
-	//user, err := server.store.
+	user, err := server.store.Me(ctx, payload.UserId)
+	if err != nil {
+		pqErr, ok := err.(*pq.Error)
+		if ok {
+			switch pqErr.Code.Name() {
+				case "case_not_found":
+					ctx.JSON(http.StatusNotFound, errResponse(err))
+					return
+			}
+		}
+		ctx.JSON(http.StatusInternalServerError, errResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, CreateUserResponse(user))
 }
